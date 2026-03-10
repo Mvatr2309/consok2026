@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import s from "./admin.module.css";
 
 type Program = { id: number; name: string; description: string; experts: { id: number; name: string }[] };
-type Expert = { id: number; name: string; photo: string; description: string; meetingLink: string; products: { id: number; name: string }[] };
+type Expert = { id: number; name: string; photo: string; description: string; meetingLink: string; accessToken: string; products: { id: number; name: string }[] };
 type Slot = { id: number; dateTime: string; maxParticipants: number; product: { id: number; name: string }; expert: { id: number; name: string; meetingLink: string }; _count: { bookings: number } };
 type Booking = { id: number; name: string; email: string; createdAt: string; slot: { dateTime: string; product: { name: string }; expert: { name: string } } };
 
@@ -170,23 +170,32 @@ export default function AdminClient() {
             <button className={`${s.btn} ${s.btnPrimary}`} onClick={() => openModal("expert")}>+ Добавить</button>
           </div>
           <table className={s.table}>
-            <thead><tr><th>Фото</th><th>Имя</th><th>Описание</th><th>Ссылка на встречу</th><th>Программы</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Фото</th><th>Имя</th><th>Описание</th><th>Ссылка на встречу</th><th>Программы</th><th>Кабинет эксперта</th><th>Действия</th></tr></thead>
             <tbody>
-              {experts.map((e) => (
-                <tr key={e.id}>
-                  <td><img src={e.photo} alt={e.name} className={s.photo} /></td>
-                  <td><strong>{e.name}</strong></td>
-                  <td>{e.description.slice(0, 80)}{e.description.length > 80 ? "..." : ""}</td>
-                  <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.meetingLink || "—"}</td>
-                  <td>{e.products.map((p) => <span key={p.id} className={s.badge}>{p.name}</span>)}</td>
-                  <td>
-                    <div className={s.btnGroup}>
-                      <button className={`${s.btn} ${s.btnPrimary} ${s.btnSmall}`} onClick={() => openModal("expert", { ...e, productIds: e.products.map((p) => p.id) })}>Ред.</button>
-                      <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("experts", e.id)}>Уд.</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {experts.map((e) => {
+                const cabinetLink = `${window.location.origin}/expert?token=${e.accessToken}`;
+                return (
+                  <tr key={e.id}>
+                    <td><img src={e.photo} alt={e.name} className={s.photo} /></td>
+                    <td><strong>{e.name}</strong></td>
+                    <td>{e.description.slice(0, 80)}{e.description.length > 80 ? "..." : ""}</td>
+                    <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.meetingLink || "—"}</td>
+                    <td>{e.products.map((p) => <span key={p.id} className={s.badge}>{p.name}</span>)}</td>
+                    <td>
+                      <div className={s.linkCell}>
+                        <a href={cabinetLink} target="_blank" rel="noopener noreferrer" className={s.linkText}>{cabinetLink}</a>
+                        <button className={`${s.btn} ${s.btnSmall}`} style={{ background: "#eee", whiteSpace: "nowrap" }} onClick={() => { navigator.clipboard.writeText(cabinetLink); }}>Копировать</button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className={s.btnGroup}>
+                        <button className={`${s.btn} ${s.btnPrimary} ${s.btnSmall}`} onClick={() => openModal("expert", { ...e, productIds: e.products.map((p) => p.id) })}>Ред.</button>
+                        <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("experts", e.id)}>Уд.</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {!experts.length && <p className={s.empty}>Нет экспертов</p>}

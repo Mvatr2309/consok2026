@@ -21,6 +21,7 @@ model Expert {
   photo       String
   description String
   meetingLink String    @default("")
+  accessToken String    @unique @default(uuid())
   slots       Slot[]
   products    Product[] @relation("ExpertToProduct")
 }
