@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import ExpertCabinetClient from "./ExpertCabinetClient";
-import styles from "./expert.module.css";
+import ExpertLoginClient from "./ExpertLoginClient";
 
 export const metadata: Metadata = {
   title: "Личный кабинет эксперта — МФТИ",
@@ -11,17 +12,14 @@ type Props = {
 };
 
 export default async function ExpertPage({ searchParams }: Props) {
-  const { token } = await searchParams;
+  const { token: queryToken } = await searchParams;
+  const cookieStore = await cookies();
+  const cookieToken = cookieStore.get("expert_token")?.value;
+
+  const token = queryToken || cookieToken;
 
   if (!token) {
-    return (
-      <div className={styles.denied}>
-        <h1 className={styles.deniedTitle}>Нет доступа</h1>
-        <p className={styles.deniedText}>
-          Используйте персональную ссылку, полученную от администратора.
-        </p>
-      </div>
-    );
+    return <ExpertLoginClient />;
   }
 
   return <ExpertCabinetClient token={token} />;

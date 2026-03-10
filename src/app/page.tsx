@@ -21,12 +21,15 @@ function formatTime(date: Date): string {
 }
 
 export default async function HomePage() {
+  const now = new Date();
+  const fiveDaysLater = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+
   const programs = await prisma.product.findMany({
     include: {
       experts: true,
       slots: {
         where: {
-          dateTime: { gte: new Date() },
+          dateTime: { gte: now, lte: fiveDaysLater },
         },
         include: {
           _count: {

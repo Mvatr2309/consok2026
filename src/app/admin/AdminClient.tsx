@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import s from "./admin.module.css";
 
 type Program = { id: number; name: string; description: string; experts: { id: number; name: string }[] };
-type Expert = { id: number; name: string; photo: string; description: string; meetingLink: string; accessToken: string; products: { id: number; name: string }[] };
+type Expert = { id: number; name: string; photo: string; description: string; meetingLink: string; accessToken: string; login: string | null; products: { id: number; name: string }[] };
 type Slot = { id: number; dateTime: string; maxParticipants: number; product: { id: number; name: string }; expert: { id: number; name: string; meetingLink: string }; _count: { bookings: number } };
 type Booking = { id: number; name: string; email: string; createdAt: string; slot: { dateTime: string; product: { name: string }; expert: { name: string } } };
 
@@ -87,6 +87,7 @@ export default function AdminClient() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [modal, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     if (tab === "programs") setPrograms(await api("programs"));
@@ -170,7 +171,7 @@ export default function AdminClient() {
             <button className={`${s.btn} ${s.btnPrimary}`} onClick={() => openModal("expert")}>+ Добавить</button>
           </div>
           <table className={s.table}>
-            <thead><tr><th>Фото</th><th>Имя</th><th>Описание</th><th>Ссылка на встречу</th><th>Программы</th><th>Кабинет эксперта</th><th>Действия</th></tr></thead>
+            <thead><tr><th>Фото</th><th>Имя</th><th>Описание</th><th>Ссылка на встречу</th><th>Программы</th><th>Логин</th><th>Кабинет эксперта</th><th>Действия</th></tr></thead>
             <tbody>
               {experts.map((e) => {
                 const cabinetLink = `${window.location.origin}/expert?token=${e.accessToken}`;
@@ -181,6 +182,7 @@ export default function AdminClient() {
                     <td>{e.description.slice(0, 80)}{e.description.length > 80 ? "..." : ""}</td>
                     <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.meetingLink || "—"}</td>
                     <td>{e.products.map((p) => <span key={p.id} className={s.badge}>{p.name}</span>)}</td>
+                    <td>{e.login || <span style={{ color: "#999" }}>—</span>}</td>
                     <td>
                       <div className={s.linkCell}>
                         <a href={cabinetLink} target="_blank" rel="noopener noreferrer" className={s.linkText}>{cabinetLink}</a>
@@ -207,6 +209,14 @@ export default function AdminClient() {
           <div className={s.sectionHeader}>
             <h2 className={s.sectionTitle}>Слоты</h2>
             <div className={s.btnGroup}>
+              {selectedSlots.size > 0 && (
+                <button className={`${s.btn} ${s.btnDanger}`} onClick={async () => {
+                  if (!confirm(`Удалить ${selectedSlots.size} слотов (и все связанные записи)?`)) return;
+                  await api("slots", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: Array.from(selectedSlots) }) });
+                  setSelectedSlots(new Set());
+                  load();
+                }}>Удалить выбранные ({selectedSlots.size})</button>
+              )}
               <button className={`${s.btn} ${s.btnPrimary}`} onClick={() => openModal("slot")}>+ Добавить</button>
               <button className={s.btn} style={{ background: "#eee" }} onClick={() => downloadTemplate(experts, programs)}>Скачать шаблон CSV</button>
               <label className={`${s.btn}`} style={{ background: "#eee", cursor: "pointer" }}>
@@ -219,10 +229,21 @@ export default function AdminClient() {
             </div>
           </div>
           <table className={s.table}>
-            <thead><tr><th>ID</th><th>Дата/время</th><th>Программа</th><th>Эксперт</th><th>Мест</th><th>Ссылка</th><th>Действия</th></tr></thead>
+            <thead><tr>
+              <th><input type="checkbox" checked={slots.length > 0 && selectedSlots.size === slots.length} onChange={(e) => {
+                if (e.target.checked) setSelectedSlots(new Set(slots.map((sl) => sl.id)));
+                else setSelectedSlots(new Set());
+              }} /></th>
+              <th>ID</th><th>Дата/время</th><th>Программа</th><th>Эксперт</th><th>Мест</th><th>Ссылка</th><th>Действия</th>
+            </tr></thead>
             <tbody>
               {slots.map((sl) => (
-                <tr key={sl.id}>
+                <tr key={sl.id} style={selectedSlots.has(sl.id) ? { background: "rgba(0, 48, 146, 0.04)" } : undefined}>
+                  <td><input type="checkbox" checked={selectedSlots.has(sl.id)} onChange={(e) => {
+                    const next = new Set(selectedSlots);
+                    if (e.target.checked) next.add(sl.id); else next.delete(sl.id);
+                    setSelectedSlots(next);
+                  }} /></td>
                   <td>{sl.id}</td>
                   <td>{fmtDateTime(sl.dateTime)}</td>
                   <td>{sl.product.name}</td>
@@ -397,6 +418,17 @@ function ModalForm({ type, data, programs, experts, onClose, onSave }: {
                     </span>
                   );
                 })}
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid #e8ecf4", margin: "16px 0", paddingTop: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#123194", marginBottom: 12 }}>Авторизация в кабинет</p>
+              <div className={s.formGroup}>
+                <label className={s.label}>Логин</label>
+                <input className={s.input} value={(form.login as string) || ""} onChange={(e) => set("login", e.target.value)} placeholder="expert1" autoComplete="off" />
+              </div>
+              <div className={s.formGroup}>
+                <label className={s.label}>{isEdit ? "Новый пароль (оставьте пустым, чтобы не менять)" : "Пароль"}</label>
+                <input className={s.input} type="password" value={(form.password as string) || ""} onChange={(e) => set("password", e.target.value)} placeholder="••••••" autoComplete="new-password" />
               </div>
             </div>
           </>

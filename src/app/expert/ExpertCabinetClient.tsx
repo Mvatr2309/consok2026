@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import s from "./expert.module.css";
 
 type Booking = {
@@ -23,8 +24,13 @@ type ExpertData = {
   name: string;
   photo: string;
   meetingLink: string;
+  total: number;
+  page: number;
+  totalPages: number;
   slots: Slot[];
 };
+
+type Tab = "upcoming" | "archive";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", {
@@ -47,9 +53,13 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
   const [data, setData] = useState<ExpertData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Tab>("upcoming");
+  const [page, setPage] = useState(1);
+  const router = useRouter();
 
-  useEffect(() => {
-    fetch(`/api/expert?token=${encodeURIComponent(token)}`)
+  const loadData = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/expert?token=${encodeURIComponent(token)}&tab=${tab}&page=${page}`)
       .then((res) => res.json())
       .then((result) => {
         if (result.error) {
@@ -60,11 +70,23 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
       })
       .catch(() => setError("Ошибка загрузки"))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, tab, page]);
 
-  if (loading) return <p className={s.loading}>Загрузка...</p>;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  if (error) {
+  async function handleLogout() {
+    await fetch("/api/expert/logout", { method: "POST" });
+    router.refresh();
+  }
+
+  function switchTab(newTab: Tab) {
+    setTab(newTab);
+    setPage(1);
+  }
+
+  if (error && !data) {
     return (
       <div className={s.denied}>
         <h1 className={s.deniedTitle}>Ошибка</h1>
@@ -73,6 +95,7 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
     );
   }
 
+  if (!data && loading) return <p className={s.loading}>Загрузка...</p>;
   if (!data) return null;
 
   return (
@@ -83,6 +106,7 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
           <p className={s.subtitle}>Личный кабинет эксперта</p>
           <h1 className={s.title}>{data.name}</h1>
         </div>
+        <button className={s.logoutBtn} onClick={handleLogout}>Выйти</button>
       </div>
 
       {data.meetingLink && (
@@ -99,58 +123,97 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
         </div>
       )}
 
-      <h2 className={s.sectionTitle}>
-        Предстоящие консультации ({data.slots.length})
-      </h2>
+      <div className={s.cabinetTabs}>
+        <button
+          className={`${s.cabinetTab} ${tab === "upcoming" ? s.cabinetTabActive : ""}`}
+          onClick={() => switchTab("upcoming")}
+        >
+          Предстоящие ({tab === "upcoming" ? data.total : "..."})
+        </button>
+        <button
+          className={`${s.cabinetTab} ${tab === "archive" ? s.cabinetTabActive : ""}`}
+          onClick={() => switchTab("archive")}
+        >
+          Архив ({tab === "archive" ? data.total : "..."})
+        </button>
+      </div>
 
-      {data.slots.length === 0 ? (
-        <p className={s.empty}>Нет предстоящих консультаций</p>
+      {loading ? (
+        <p className={s.loading}>Загрузка...</p>
+      ) : data.slots.length === 0 ? (
+        <p className={s.empty}>
+          {tab === "upcoming" ? "Нет предстоящих консультаций" : "Архив пуст"}
+        </p>
       ) : (
-        <div className={s.slotsList}>
-          {data.slots.map((slot) => (
-            <div key={slot.id} className={s.slotCard}>
-              <div className={s.slotHeader}>
-                <div>
-                  <span className={s.slotDate}>{fmtDate(slot.dateTime)}</span>
-                  <span className={s.slotTime}>{fmtTime(slot.dateTime)} (МСК)</span>
+        <>
+          <div className={s.slotsList}>
+            {data.slots.map((slot) => (
+              <div key={slot.id} className={s.slotCard}>
+                <div className={s.slotHeader}>
+                  <div>
+                    <span className={s.slotDate}>{fmtDate(slot.dateTime)}</span>
+                    <span className={s.slotTime}>{fmtTime(slot.dateTime)} (МСК)</span>
+                  </div>
+                  <div className={s.slotMeta}>
+                    <span className={s.slotProgram}>{slot.programName}</span>
+                    <span className={s.slotCount}>
+                      {slot.bookings.length} / {slot.maxParticipants} записей
+                    </span>
+                  </div>
                 </div>
-                <div className={s.slotMeta}>
-                  <span className={s.slotProgram}>{slot.programName}</span>
-                  <span className={s.slotCount}>
-                    {slot.bookings.length} / {slot.maxParticipants} записей
-                  </span>
-                </div>
-              </div>
 
-              {slot.bookings.length > 0 ? (
-                <table className={s.bookingsTable}>
-                  <thead>
-                    <tr>
-                      <th>Имя</th>
-                      <th>Email</th>
-                      <th>Дата записи</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {slot.bookings.map((b) => (
-                      <tr key={b.id}>
-                        <td>{b.name}</td>
-                        <td>
-                          <a href={`mailto:${b.email}`} className={s.emailLink}>
-                            {b.email}
-                          </a>
-                        </td>
-                        <td>{fmtDate(b.createdAt)}</td>
+                {slot.bookings.length > 0 ? (
+                  <table className={s.bookingsTable}>
+                    <thead>
+                      <tr>
+                        <th>Имя</th>
+                        <th>Email</th>
+                        <th>Дата записи</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p className={s.noBookings}>Пока никто не записался</p>
-              )}
+                    </thead>
+                    <tbody>
+                      {slot.bookings.map((b) => (
+                        <tr key={b.id}>
+                          <td>{b.name}</td>
+                          <td>
+                            <a href={`mailto:${b.email}`} className={s.emailLink}>
+                              {b.email}
+                            </a>
+                          </td>
+                          <td>{fmtDate(b.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className={s.noBookings}>Пока никто не записался</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {data.totalPages > 1 && (
+            <div className={s.pagination}>
+              <button
+                className={s.pageBtn}
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Назад
+              </button>
+              <span className={s.pageInfo}>
+                {page} / {data.totalPages}
+              </span>
+              <button
+                className={s.pageBtn}
+                disabled={page >= data.totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                Далее
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </>
   );

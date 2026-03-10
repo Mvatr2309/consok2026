@@ -16,14 +16,16 @@ model Product {
 }
 
 model Expert {
-  id          Int       @id @default(autoincrement())
-  name        String
-  photo       String
-  description String
-  meetingLink String    @default("")
-  accessToken String    @unique @default(uuid())
-  slots       Slot[]
-  products    Product[] @relation("ExpertToProduct")
+  id           Int       @id @default(autoincrement())
+  name         String
+  photo        String
+  description  String
+  meetingLink  String    @default("")
+  accessToken  String    @unique @default(uuid())
+  login        String?   @unique
+  passwordHash String?
+  slots        Slot[]
+  products     Product[] @relation("ExpertToProduct")
 }
 
 model Slot {

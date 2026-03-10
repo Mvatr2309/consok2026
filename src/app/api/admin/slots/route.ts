@@ -57,7 +57,15 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const { id } = await request.json();
-  await prisma.slot.delete({ where: { id } });
+  const body = await request.json();
+
+  if (body.ids && Array.isArray(body.ids)) {
+    await prisma.booking.deleteMany({ where: { slotId: { in: body.ids } } });
+    await prisma.slot.deleteMany({ where: { id: { in: body.ids } } });
+    return NextResponse.json({ ok: true, deleted: body.ids.length });
+  }
+
+  await prisma.booking.deleteMany({ where: { slotId: body.id } });
+  await prisma.slot.delete({ where: { id: body.id } });
   return NextResponse.json({ ok: true });
 }
