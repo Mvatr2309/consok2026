@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  slots       Slot[]
+  experts     Expert[] @relation("ExpertToProduct")
+}
+
+model Expert {
+  id          Int       @id @default(autoincrement())
+  name        String
+  photo       String
+  description String
+  meetingLink String    @default("")
+  slots       Slot[]
+  products    Product[] @relation("ExpertToProduct")
+}
+
+model Slot {
+  id              Int       @id @default(autoincrement())
+  dateTime        DateTime
+  maxParticipants Int
+  productId       Int
+  expertId        Int
+  bookings        Booking[]
+  expert          Expert    @relation(fields: [expertId], references: [id])
+  product         Product   @relation(fields: [productId], references: [id])
+}
+
+model Booking {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String
+  slotId         Int
+  createdAt      DateTime @default(now())
+  reminderSentAt DateTime?
+  slot           Slot     @relation(fields: [slotId], references: [id])
+}
+
+model Settings {
+  id    Int    @id @default(1)
+  key   String @unique
+  value String
+}

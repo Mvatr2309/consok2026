@@ -1,0 +1,294 @@
+.pageSubtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+}
+
+.programTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin: 0 0 8px 0;
+  line-height: 1.15;
+}
+
+.programDesc {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 40px 0;
+}
+
+/* Experts section */
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0 0 20px 0;
+}
+
+.expertsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.expertCard {
+  background: var(--color-white);
+  border: 2px solid var(--color-border);
+  padding: 24px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.expertCard:hover {
+  border-color: var(--color-primary);
+}
+
+.expertCardActive {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.expertPhoto {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.expertInfo {
+  flex: 1;
+}
+
+.expertName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin: 0 0 4px 0;
+}
+
+.expertDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Slots section */
+.slotsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.slotBtn {
+  padding: 10px 20px;
+  border: 2px solid var(--color-border);
+  background: var(--color-white);
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.slotBtn:hover {
+  border-color: var(--color-primary);
+}
+
+.slotBtnActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.slotBtnFull {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.slotBtnFull:hover {
+  border-color: var(--color-border);
+}
+
+.slotDate {
+  font-weight: 600;
+  display: block;
+  font-size: 14px;
+}
+
+.slotTime {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.slotSeats {
+  font-size: 11px;
+  opacity: 0.5;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Booking form */
+.form {
+  background: var(--color-white);
+  border-top: 3px solid var(--color-primary);
+  padding: 32px;
+  max-width: 480px;
+}
+
+.formTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin: 0 0 20px 0;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.formInput:focus {
+  border-color: var(--color-primary);
+}
+
+.formSubmit {
+  display: inline-block;
+  padding: 12px 32px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+  text-align: center;
+}
+
+.formSubmit:hover {
+  background: var(--color-accent-hover);
+}
+
+.formSubmit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--color-accent);
+  font-size: 14px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+/* Success message */
+.success {
+  background: var(--color-white);
+  border-top: 3px solid #28a745;
+  padding: 32px;
+  max-width: 480px;
+}
+
+.successTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #28a745;
+  margin: 0 0 12px 0;
+}
+
+.successText {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 8px 0;
+}
+
+.successLink {
+  display: inline-block;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 16px;
+  word-break: break-all;
+}
+
+.successLink:hover {
+  text-decoration: underline;
+}
+
+.calendarBtn {
+  display: inline-block;
+  padding: 10px 24px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.calendarBtn:hover {
+  background: var(--color-primary-dark);
+}
+
+.noSlots {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 32px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+  .programTitle {
+    font-size: 24px;
+  }
+
+  .expertsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .form, .success {
+    padding: 20px;
+  }
+}
