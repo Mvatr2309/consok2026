@@ -88,6 +88,13 @@ export default function AdminClient() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [modal, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<Set<number>>(new Set());
+  const [slotsView, setSlotsView] = useState<"table" | "calendar">("table");
+  const [calendarExpert, setCalendarExpert] = useState<number | 0>(0);
+  const [calendarWeekStart, setCalendarWeekStart] = useState<Date>(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay() + 1);
+    return d;
+  });
 
   const load = useCallback(async () => {
     if (tab === "programs") setPrograms(await api("programs"));
@@ -209,7 +216,9 @@ export default function AdminClient() {
           <div className={s.sectionHeader}>
             <h2 className={s.sectionTitle}>Слоты</h2>
             <div className={s.btnGroup}>
-              {selectedSlots.size > 0 && (
+              <button className={s.btn} style={{ background: slotsView === "table" ? "var(--color-primary)" : "#eee", color: slotsView === "table" ? "#fff" : undefined }} onClick={() => setSlotsView("table")}>Таблица</button>
+              <button className={s.btn} style={{ background: slotsView === "calendar" ? "var(--color-primary)" : "#eee", color: slotsView === "calendar" ? "#fff" : undefined }} onClick={() => setSlotsView("calendar")}>Календарь</button>
+              {slotsView === "table" && selectedSlots.size > 0 && (
                 <button className={`${s.btn} ${s.btnDanger}`} onClick={async () => {
                   if (!confirm(`Удалить ${selectedSlots.size} слотов (и все связанные записи)?`)) return;
                   await api("slots", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: Array.from(selectedSlots) }) });
@@ -228,39 +237,57 @@ export default function AdminClient() {
               </label>
             </div>
           </div>
-          <table className={s.table}>
-            <thead><tr>
-              <th><input type="checkbox" checked={slots.length > 0 && selectedSlots.size === slots.length} onChange={(e) => {
-                if (e.target.checked) setSelectedSlots(new Set(slots.map((sl) => sl.id)));
-                else setSelectedSlots(new Set());
-              }} /></th>
-              <th>ID</th><th>Дата/время</th><th>Программа</th><th>Эксперт</th><th>Мест</th><th>Ссылка</th><th>Действия</th>
-            </tr></thead>
-            <tbody>
-              {slots.map((sl) => (
-                <tr key={sl.id} style={selectedSlots.has(sl.id) ? { background: "rgba(0, 48, 146, 0.04)" } : undefined}>
-                  <td><input type="checkbox" checked={selectedSlots.has(sl.id)} onChange={(e) => {
-                    const next = new Set(selectedSlots);
-                    if (e.target.checked) next.add(sl.id); else next.delete(sl.id);
-                    setSelectedSlots(next);
-                  }} /></td>
-                  <td>{sl.id}</td>
-                  <td>{fmtDateTime(sl.dateTime)}</td>
-                  <td>{sl.product.name}</td>
-                  <td>{sl.expert.name}</td>
-                  <td>{sl._count.bookings}/{sl.maxParticipants}</td>
-                  <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sl.expert.meetingLink}</td>
-                  <td>
-                    <div className={s.btnGroup}>
-                      <button className={`${s.btn} ${s.btnPrimary} ${s.btnSmall}`} onClick={() => openModal("slot", { ...sl, productId: sl.product.id, expertId: sl.expert.id })}>Ред.</button>
-                      <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("slots", sl.id)}>Уд.</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!slots.length && <p className={s.empty}>Нет слотов</p>}
+
+          {slotsView === "table" && (
+            <>
+              <table className={s.table}>
+                <thead><tr>
+                  <th><input type="checkbox" checked={slots.length > 0 && selectedSlots.size === slots.length} onChange={(e) => {
+                    if (e.target.checked) setSelectedSlots(new Set(slots.map((sl) => sl.id)));
+                    else setSelectedSlots(new Set());
+                  }} /></th>
+                  <th>ID</th><th>Дата/время</th><th>Программа</th><th>Эксперт</th><th>Мест</th><th>Ссылка</th><th>Действия</th>
+                </tr></thead>
+                <tbody>
+                  {slots.map((sl) => (
+                    <tr key={sl.id} style={selectedSlots.has(sl.id) ? { background: "rgba(0, 48, 146, 0.04)" } : undefined}>
+                      <td><input type="checkbox" checked={selectedSlots.has(sl.id)} onChange={(e) => {
+                        const next = new Set(selectedSlots);
+                        if (e.target.checked) next.add(sl.id); else next.delete(sl.id);
+                        setSelectedSlots(next);
+                      }} /></td>
+                      <td>{sl.id}</td>
+                      <td>{fmtDateTime(sl.dateTime)}</td>
+                      <td>{sl.product.name}</td>
+                      <td>{sl.expert.name}</td>
+                      <td>{sl._count.bookings}/{sl.maxParticipants}</td>
+                      <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sl.expert.meetingLink}</td>
+                      <td>
+                        <div className={s.btnGroup}>
+                          <button className={`${s.btn} ${s.btnPrimary} ${s.btnSmall}`} onClick={() => openModal("slot", { ...sl, productId: sl.product.id, expertId: sl.expert.id })}>Ред.</button>
+                          <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("slots", sl.id)}>Уд.</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!slots.length && <p className={s.empty}>Нет слотов</p>}
+            </>
+          )}
+
+          {slotsView === "calendar" && (
+            <SlotsCalendar
+              slots={slots}
+              experts={experts}
+              calendarExpert={calendarExpert}
+              setCalendarExpert={setCalendarExpert}
+              calendarWeekStart={calendarWeekStart}
+              setCalendarWeekStart={setCalendarWeekStart}
+              onEdit={(sl) => openModal("slot", { ...sl, productId: sl.product.id, expertId: sl.expert.id })}
+              onDelete={(id) => handleDelete("slots", id)}
+            />
+          )}
         </div>
       )}
 
@@ -305,6 +332,152 @@ export default function AdminClient() {
         />
       )}
     </>
+  );
+}
+
+const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+function getWeekDays(start: Date): Date[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+}
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function fmtDayMonth(d: Date) {
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short", timeZone: "Europe/Moscow" });
+}
+
+function SlotsCalendar({ slots, experts, calendarExpert, setCalendarExpert, calendarWeekStart, setCalendarWeekStart, onEdit, onDelete }: {
+  slots: Slot[];
+  experts: Expert[];
+  calendarExpert: number;
+  setCalendarExpert: (id: number) => void;
+  calendarWeekStart: Date;
+  setCalendarWeekStart: (d: Date) => void;
+  onEdit: (sl: Slot) => void;
+  onDelete: (id: number) => void;
+}) {
+  const filtered = calendarExpert ? slots.filter((sl) => sl.expert.id === calendarExpert) : slots;
+  const weekDays = getWeekDays(calendarWeekStart);
+
+  const hours: number[] = [];
+  for (let h = 6; h <= 22; h++) hours.push(h);
+
+  function prevWeek() {
+    const d = new Date(calendarWeekStart);
+    d.setDate(d.getDate() - 7);
+    setCalendarWeekStart(d);
+  }
+
+  function nextWeek() {
+    const d = new Date(calendarWeekStart);
+    d.setDate(d.getDate() + 7);
+    setCalendarWeekStart(d);
+  }
+
+  function toThisWeek() {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay() + 1);
+    setCalendarWeekStart(d);
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <select className={s.select} style={{ width: "auto", minWidth: 200 }} value={calendarExpert} onChange={(e) => setCalendarExpert(parseInt(e.target.value))}>
+          <option value={0}>Все эксперты</option>
+          {experts.map((exp) => <option key={exp.id} value={exp.id}>{exp.name}</option>)}
+        </select>
+        <div className={s.btnGroup}>
+          <button className={s.btn} style={{ background: "#eee" }} onClick={prevWeek}>&larr;</button>
+          <button className={s.btn} style={{ background: "#eee" }} onClick={toThisWeek}>Сегодня</button>
+          <button className={s.btn} style={{ background: "#eee" }} onClick={nextWeek}>&rarr;</button>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-primary-dark)" }}>
+          {fmtDayMonth(weekDays[0])} — {fmtDayMonth(weekDays[6])}
+        </span>
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table className={s.table} style={{ minWidth: 800, tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              <th style={{ width: 60 }}>Время</th>
+              {weekDays.map((d, i) => {
+                const isToday = isSameDay(d, new Date());
+                return (
+                  <th key={i} style={isToday ? { background: "rgba(0, 48, 146, 0.08)", color: "var(--color-primary)" } : undefined}>
+                    {WEEKDAYS[i]}, {fmtDayMonth(d)}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {hours.map((h) => (
+              <tr key={h}>
+                <td style={{ fontSize: 12, color: "var(--color-text-muted)", textAlign: "center", padding: "4px 8px", verticalAlign: "top" }}>
+                  {h.toString().padStart(2, "0")}:00
+                </td>
+                {weekDays.map((day, di) => {
+                  const cellSlots = filtered.filter((sl) => {
+                    const slDate = new Date(sl.dateTime);
+                    const mskOffset = 3 * 60 * 60 * 1000;
+                    const mskDate = new Date(slDate.getTime() + mskOffset);
+                    return isSameDay(new Date(mskDate.getUTCFullYear(), mskDate.getUTCMonth(), mskDate.getUTCDate()), day) && mskDate.getUTCHours() === h;
+                  });
+                  return (
+                    <td key={di} style={{ padding: 2, verticalAlign: "top", height: 50 }}>
+                      {cellSlots.map((sl) => (
+                        <div
+                          key={sl.id}
+                          onClick={() => onEdit(sl)}
+                          style={{
+                            background: sl._count.bookings >= sl.maxParticipants ? "rgba(232, 55, 90, 0.1)" : "rgba(0, 48, 146, 0.08)",
+                            border: "1px solid " + (sl._count.bookings >= sl.maxParticipants ? "var(--color-accent)" : "var(--color-primary)"),
+                            padding: "3px 6px",
+                            marginBottom: 2,
+                            cursor: "pointer",
+                            fontSize: 11,
+                            lineHeight: 1.3,
+                          }}
+                          title={`${sl.product.name}\n${sl.expert.name}\n${sl._count.bookings}/${sl.maxParticipants} записей\nНажмите для редактирования`}
+                        >
+                          <div style={{ fontWeight: 600, color: "var(--color-primary-dark)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {fmtTime(sl.dateTime)} {!calendarExpert && sl.expert.name.split(" ")[0]}
+                          </div>
+                          <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "var(--color-text-secondary)" }}>
+                            {sl.product.name}
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ color: sl._count.bookings >= sl.maxParticipants ? "var(--color-accent)" : "var(--color-text-muted)" }}>
+                              {sl._count.bookings}/{sl.maxParticipants}
+                            </span>
+                            <span
+                              onClick={(e) => { e.stopPropagation(); onDelete(sl.id); }}
+                              style={{ color: "var(--color-accent)", cursor: "pointer", fontWeight: 700 }}
+                              title="Удалить"
+                            >
+                              &times;
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
