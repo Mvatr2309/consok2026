@@ -279,6 +279,82 @@
   margin-bottom: 24px;
 }
 
+/* Consent checkboxes */
+.consentGroup {
+  margin-bottom: 20px;
+}
+
+.consentLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.consentLabel input[type="checkbox"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
+.consentLink {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.consentLink:hover {
+  color: var(--color-primary-dark);
+}
+
+/* Cookie banner */
+.cookieBanner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 1000;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cookieBannerText {
+  flex: 1;
+}
+
+.cookieBannerText a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.cookieBannerBtn {
+  padding: 8px 24px;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cookieBannerBtn:hover {
+  background: var(--color-accent-hover);
+}
+
 @media (max-width: 600px) {
   .programTitle {
     font-size: 24px;

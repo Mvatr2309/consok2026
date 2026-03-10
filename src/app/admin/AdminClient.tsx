@@ -8,7 +8,8 @@ type Expert = { id: number; name: string; photo: string; description: string; me
 type Slot = { id: number; dateTime: string; maxParticipants: number; product: { id: number; name: string }; expert: { id: number; name: string; meetingLink: string }; _count: { bookings: number } };
 type Booking = { id: number; name: string; email: string; createdAt: string; slot: { dateTime: string; product: { name: string }; expert: { name: string } } };
 
-type Tab = "programs" | "experts" | "slots" | "bookings" | "notifications";
+type ConsentLog = { id: number; bookingId: number; personalData: boolean; meetingRecording: boolean; cookiePolicy: boolean; ip: string; userAgent: string; createdAt: string; booking: { name: string; email: string } };
+type Tab = "programs" | "experts" | "slots" | "bookings" | "consents" | "notifications";
 
 async function api(path: string, options?: RequestInit) {
   const res = await fetch(`/api/admin/${path}`, options);
@@ -126,9 +127,9 @@ export default function AdminClient() {
     <>
       <h1 className={s.title}>Админ-панель</h1>
       <div className={s.tabs}>
-        {(["programs", "experts", "slots", "bookings", "notifications"] as Tab[]).map((t) => (
+        {(["programs", "experts", "slots", "bookings", "consents", "notifications"] as Tab[]).map((t) => (
           <button key={t} className={`${s.tab} ${tab === t ? s.tabActive : ""}`} onClick={() => setTab(t)}>
-            {{ programs: "Программы", experts: "Эксперты", slots: "Слоты", bookings: "Записи", notifications: "Уведомления" }[t]}
+            {{ programs: "Программы", experts: "Эксперты", slots: "Слоты", bookings: "Записи", consents: "Согласия", notifications: "Уведомления" }[t]}
           </button>
         ))}
       </div>
@@ -318,6 +319,8 @@ export default function AdminClient() {
           {!bookings.length && <p className={s.empty}>Нет записей</p>}
         </div>
       )}
+
+      {tab === "consents" && <ConsentsTab />}
 
       {tab === "notifications" && <NotificationsTab />}
 
@@ -641,6 +644,59 @@ function ModalForm({ type, data, programs, experts, onClose, onSave }: {
           <button type="button" className={s.btn} onClick={onClose} style={{ background: "#eee" }}>Отмена</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function ConsentsTab() {
+  const [consents, setConsents] = useState<ConsentLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api("consents").then((data) => {
+      if (Array.isArray(data)) setConsents(data);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <p className={s.empty}>Загрузка...</p>;
+
+  return (
+    <div className={s.section}>
+      <div className={s.sectionHeader}>
+        <h2 className={s.sectionTitle}>Логи согласий</h2>
+      </div>
+      <table className={s.table}>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Email</th>
+            <th>Перс. данные</th>
+            <th>Запись встречи</th>
+            <th>Cookie</th>
+            <th>IP</th>
+            <th>User Agent</th>
+            <th>Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          {consents.map((c) => (
+            <tr key={c.id}>
+              <td>{c.id}</td>
+              <td><strong>{c.booking.name}</strong></td>
+              <td>{c.booking.email}</td>
+              <td>{c.personalData ? "Да" : "Нет"}</td>
+              <td>{c.meetingRecording ? "Да" : "Нет"}</td>
+              <td>{c.cookiePolicy ? "Да" : "Нет"}</td>
+              <td style={{ fontSize: 12 }}>{c.ip}</td>
+              <td style={{ fontSize: 11, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.userAgent}</td>
+              <td>{fmtDateTime(c.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!consents.length && <p className={s.empty}>Нет записей о согласиях</p>}
     </div>
   );
 }

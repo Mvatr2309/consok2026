@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 
 type SlotData = {
@@ -88,6 +88,13 @@ export default function ProgramClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<BookingResult | null>(null);
+  const [consentPersonal, setConsentPersonal] = useState(false);
+  const [consentRecording, setConsentRecording] = useState(false);
+  const [cookieAccepted, setCookieAccepted] = useState(true);
+
+  useEffect(() => {
+    setCookieAccepted(localStorage.getItem("cookie_accepted") === "1");
+  }, []);
 
   const currentExpert = experts.find((e) => e.id === selectedExpert);
 
@@ -108,6 +115,8 @@ export default function ProgramClient({
           email: email.trim(),
           programId,
           programName,
+          consentPersonal,
+          consentRecording,
         }),
       });
 
@@ -244,6 +253,27 @@ export default function ProgramClient({
         </>
       )}
 
+      {!cookieAccepted && (
+        <div className={styles.cookieBanner}>
+          <span className={styles.cookieBannerText}>
+            Этот сайт использует файлы cookie для обеспечения работы сервиса.
+            Продолжая использовать сайт, вы соглашаетесь с{" "}
+            <a href="https://mipt.ru/privacy" target="_blank" rel="noopener noreferrer">
+              Политикой обработки файлов cookie
+            </a>.
+          </span>
+          <button
+            className={styles.cookieBannerBtn}
+            onClick={() => {
+              localStorage.setItem("cookie_accepted", "1");
+              setCookieAccepted(true);
+            }}
+          >
+            Принять
+          </button>
+        </div>
+      )}
+
       {selectedSlot && (
         <form className={styles.form} onSubmit={handleSubmit}>
           <h3 className={styles.formTitle}>Записаться на консультацию</h3>
@@ -270,10 +300,41 @@ export default function ProgramClient({
               required
             />
           </div>
+          <div className={styles.consentGroup}>
+            <label className={styles.consentLabel}>
+              <input
+                type="checkbox"
+                checked={consentPersonal}
+                onChange={(e) => setConsentPersonal(e.target.checked)}
+              />
+              <span>
+                Я соглашаюсь с{" "}
+                <a
+                  href="https://mipt.ru/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.consentLink}
+                >
+                  Политикой в отношении обработки персональных данных
+                </a>{" "}
+                и Политикой обработки файлов cookie
+              </span>
+            </label>
+            <label className={styles.consentLabel}>
+              <input
+                type="checkbox"
+                checked={consentRecording}
+                onChange={(e) => setConsentRecording(e.target.checked)}
+              />
+              <span>
+                Я соглашаюсь с тем, что встреча будет записана
+              </span>
+            </label>
+          </div>
           <button
             type="submit"
             className={styles.formSubmit}
-            disabled={loading || !name.trim() || !email.trim()}
+            disabled={loading || !name.trim() || !email.trim() || !consentPersonal || !consentRecording}
           >
             {loading ? "Записываем..." : "Записаться"}
           </button>

@@ -5,11 +5,18 @@ import { sendBookingConfirmation } from "@/lib/mail";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slotId, name, email, programId } = body;
+    const { slotId, name, email, programId, consentPersonal, consentRecording } = body;
 
     if (!slotId || !name?.trim() || !email?.trim() || !programId) {
       return NextResponse.json(
         { error: "Все поля обязательны" },
+        { status: 400 }
+      );
+    }
+
+    if (!consentPersonal || !consentRecording) {
+      return NextResponse.json(
+        { error: "Необходимо дать согласие на обработку персональных данных и запись встречи" },
         { status: 400 }
       );
     }
@@ -60,12 +67,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create booking
-    await prisma.booking.create({
+    // Create booking with consent
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "";
+    const userAgent = request.headers.get("user-agent") || "";
+
+    const booking = await prisma.booking.create({
       data: {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         slotId: slot.id,
+        consent: {
+          create: {
+            personalData: true,
+            meetingRecording: true,
+            cookiePolicy: true,
+            ip,
+            userAgent,
+          },
+        },
       },
     });
 
