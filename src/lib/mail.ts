@@ -122,7 +122,35 @@ export async function sendBookingConfirmation(params: EmailParams) {
   });
 }
 
-// 2. Reminder email (before the meeting)
+// 2. Cancellation email
+export async function sendCancellation(params: Omit<EmailParams, "meetingLink">) {
+  const { to, userName, expertName, programName, dateTime } = params;
+  const dateStr = formatDateRu(dateTime);
+  const timeStr = formatTimeRu(dateTime);
+
+  const html = emailWrapper(`
+    <h2 style="color: #E8375A; font-size: 22px; margin: 0 0 16px 0;">Консультация отменена</h2>
+    <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
+      Здравствуйте, ${userName}!
+    </p>
+    <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
+      К сожалению, ваша консультация была отменена.
+    </p>
+    ${detailsTable(programName, expertName, dateStr, timeStr)}
+    <p style="color: #555; font-size: 14px; margin: 0;">
+      Если у вас есть вопросы, свяжитесь с нами по почте <a href="mailto:${process.env.SMTP_USER}" style="color: #123194;">${process.env.SMTP_USER}</a>.
+    </p>
+  `);
+
+  await transporter.sendMail({
+    from: `"МФТИ Консультации" <${process.env.SMTP_USER}>`,
+    to,
+    subject: `Отмена консультации: ${programName}`,
+    html,
+  });
+}
+
+// 3. Reminder email (before the meeting)
 export async function sendReminder(params: EmailParams) {
   const { to, userName, expertName, programName, dateTime, meetingLink } = params;
   const dateStr = formatDateRu(dateTime);
