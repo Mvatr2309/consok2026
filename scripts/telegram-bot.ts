@@ -30,6 +30,36 @@ function formatDateTime(dt: Date): string {
   });
 }
 
+function googleCalendarUrl(programName: string, expertName: string, meetingLink: string, dt: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const fmt = (d: Date) =>
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+  const end = new Date(dt.getTime() + 60 * 60 * 1000);
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Консультация: ${programName}`,
+    dates: `${fmt(dt)}/${fmt(end)}`,
+    details: `Эксперт: ${expertName}\nСсылка: ${meetingLink}`,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function yandexCalendarUrl(programName: string, expertName: string, meetingLink: string, dt: Date): string {
+  const end = new Date(dt.getTime() + 60 * 60 * 1000);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const fmtLocal = (d: Date) => {
+    const msk = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+    return `${msk.getFullYear()}-${pad(msk.getMonth() + 1)}-${pad(msk.getDate())}T${pad(msk.getHours())}:${pad(msk.getMinutes())}:00`;
+  };
+  const params = new URLSearchParams({
+    startDate: fmtLocal(dt),
+    endDate: fmtLocal(end),
+    title: `Консультация: ${programName}`,
+    description: `Эксперт: ${expertName}\nСсылка: ${meetingLink}`,
+  });
+  return `https://calendar.yandex.ru/event?${params.toString()}`;
+}
+
 async function handleUpdate(update: { update_id: number; message?: { chat: { id: number }; text?: string } }) {
   if (!update.message?.text) return;
 
@@ -42,7 +72,6 @@ async function handleUpdate(update: { update_id: number; message?: { chat: { id:
   const parts = text.split(" ");
 
   if (parts.length < 2 || !parts[1].startsWith("booking_")) {
-    // Plain /start without deep link — short info and ignore
     await callTg("sendMessage", {
       chat_id: chatId,
       text: "Этот бот отправляет напоминания о консультациях.\n\nЗапишитесь на сайте и нажмите «Напоминание в Telegram».",
@@ -63,13 +92,11 @@ async function handleUpdate(update: { update_id: number; message?: { chat: { id:
     return;
   }
 
-  // Check if consultation already passed
   if (booking.slot.dateTime < new Date()) {
     await callTg("sendMessage", { chat_id: chatId, text: "Эта консультация уже прошла." });
     return;
   }
 
-  // Check if already subscribed
   const existing = await prisma.telegramSub.findUnique({ where: { bookingId } });
   if (existing) {
     await callTg("sendMessage", {
@@ -83,9 +110,25 @@ async function handleUpdate(update: { update_id: number; message?: { chat: { id:
     data: { chatId: chatId.toString(), bookingId },
   });
 
+  const dt = booking.slot.dateTime;
+  const expert = booking.slot.expert;
+  const product = booking.slot.product;
+
+  const googleUrl = googleCalendarUrl(product.name, expert.name, expert.meetingLink, dt);
+  const yandexUrl = yandexCalendarUrl(product.name, expert.name, expert.meetingLink, dt);
+
   await callTg("sendMessage", {
     chat_id: chatId,
-    text: `Готово! ✅ Я напомню вам о консультации.\n\n📋 Программа: ${booking.slot.product.name}\n👤 Эксперт: ${booking.slot.expert.name}\n🕐 ${formatDateTime(booking.slot.dateTime)} (МСК)\n\nНапоминание придёт за 1 час до встречи.`,
+    text: `Готово! ✅ Я напомню вам о консультации.\n\n📋 Программа: ${product.name}\n👤 Эксперт: ${expert.name}\n🕐 ${formatDateTime(dt)} (МСК)\n\n🔗 Ссылка на встречу:\n${expert.meetingLink}\n\nНапоминание придёт за 1 час до встречи.`,
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "🔗 Перейти на встречу", url: expert.meetingLink }],
+        [
+          { text: "📅 Google Календарь", url: googleUrl },
+          { text: "📅 Яндекс Календарь", url: yandexUrl },
+        ],
+      ],
+    },
   });
 }
 

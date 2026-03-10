@@ -61,14 +61,19 @@ function googleCalendarUrl(result: BookingResult): string {
 function yandexCalendarUrl(result: BookingResult): string {
   const dt = new Date(result.dateTime);
   const end = new Date(dt.getTime() + 60 * 60 * 1000);
-  const fmt = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "");
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const fmtLocal = (d: Date) => {
+    // Format in Moscow time for Yandex
+    const msk = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+    return `${msk.getFullYear()}-${pad(msk.getMonth() + 1)}-${pad(msk.getDate())}T${pad(msk.getHours())}:${pad(msk.getMinutes())}:00`;
+  };
   const params = new URLSearchParams({
-    startTs: fmt(dt),
-    endTs: fmt(end),
-    name: `Консультация: ${result.programName}`,
+    startDate: fmtLocal(dt),
+    endDate: fmtLocal(end),
+    title: `Консультация: ${result.programName}`,
     description: `Эксперт: ${result.expertName}\nСсылка: ${result.meetingLink}`,
   });
-  return `https://calendar.yandex.ru/week?sidebar=addEvent&${params.toString()}`;
+  return `https://calendar.yandex.ru/event?${params.toString()}`;
 }
 
 export default function ProgramClient({
