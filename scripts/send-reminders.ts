@@ -6,6 +6,17 @@ import { sendReminder } from "../src/lib/mail";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+async function sendTelegramMessage(chatId: string, text: string) {
+  if (!BOT_TOKEN) return;
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+}
+
 async function main() {
   // Get reminder settings
   const enabledSetting = await prisma.settings.findUnique({ where: { key: "reminder_enabled" } });
@@ -38,6 +49,7 @@ async function main() {
           product: true,
         },
       },
+      telegramSub: true,
     },
   });
 
@@ -58,6 +70,19 @@ async function main() {
         where: { id: booking.id },
         data: { reminderSentAt: new Date() },
       });
+
+      // Send Telegram reminder if subscribed
+      if (booking.telegramSub) {
+        const dt = booking.slot.dateTime.toLocaleString("ru-RU", {
+          weekday: "short", day: "numeric", month: "long",
+          hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow",
+        });
+        await sendTelegramMessage(
+          booking.telegramSub.chatId,
+          `⏰ Напоминание!\n\nВаша консультация скоро начнётся:\n\n📋 ${booking.slot.product.name}\n👤 Эксперт: ${booking.slot.expert.name}\n🕐 ${dt} (МСК)\n\n🔗 Ссылка: ${booking.slot.expert.meetingLink}`
+        );
+        console.log(`Telegram reminder sent to chat ${booking.telegramSub.chatId}`);
+      }
 
       console.log(`Reminder sent to ${booking.email} for slot ${booking.slot.id}`);
     } catch (err) {

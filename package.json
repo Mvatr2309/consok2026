@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "reminders": "tsx scripts/send-reminders.ts"
+    "reminders": "tsx scripts/send-reminders.ts",
+    "telegram-bot": "tsx scripts/telegram-bot.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.4.2",

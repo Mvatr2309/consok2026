@@ -19,6 +19,7 @@ type ExpertData = {
 };
 
 type BookingResult = {
+  bookingId: number;
   meetingLink: string;
   expertName: string;
   dateTime: string;
@@ -174,6 +175,16 @@ export default function ProgramClient({
             Яндекс Календарь
           </a>
         </div>
+        <p className={styles.successText} style={{ marginTop: 16 }}>Напоминание в Telegram:</p>
+        <a
+          href={`https://t.me/mipt_consultation_bot?start=booking_${result.bookingId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.calendarBtn}
+          style={{ background: "#0088cc" }}
+        >
+          Напомнить в Telegram
+        </a>
       </div>
     );
   }

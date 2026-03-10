@@ -46,8 +46,9 @@ model Booking {
   slotId         Int
   createdAt      DateTime  @default(now())
   reminderSentAt DateTime?
-  slot           Slot      @relation(fields: [slotId], references: [id])
+  slot           Slot          @relation(fields: [slotId], references: [id])
   consent        Consent?
+  telegramSub    TelegramSub?
 }
 
 model Consent {
@@ -60,6 +61,14 @@ model Consent {
   userAgent           String   @default("")
   createdAt           DateTime @default(now())
   booking             Booking  @relation(fields: [bookingId], references: [id])
+}
+
+model TelegramSub {
+  id        Int      @id @default(autoincrement())
+  chatId    String
+  bookingId Int      @unique
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
 }
 
 model Settings {

@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
+      bookingId: booking.id,
       meetingLink: slot.expert.meetingLink,
       expertName: slot.expert.name,
       dateTime: slot.dateTime.toISOString(),
