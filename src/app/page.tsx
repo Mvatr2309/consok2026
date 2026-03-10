@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import styles from "./page.module.css";
 
+export const dynamic = "force-dynamic";
+
 function formatDate(date: Date): string {
   return date.toLocaleDateString("ru-RU", {
     day: "numeric",
