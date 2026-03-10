@@ -375,7 +375,7 @@ function ModalForm({ type, data, programs, experts, onClose, onSave }: {
             <div className={s.formGroup}>
               <label className={s.label}>Фото</label>
               <input type="file" accept="image/*" className={s.fileInput} onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
-              {form.photo && <img src={form.photo as string} alt="" className={s.photoPreview} />}
+              {typeof form.photo === "string" && form.photo && <img src={form.photo} alt="" className={s.photoPreview} />}
             </div>
             <div className={s.formGroup}>
               <label className={s.label}>Программы</label>
