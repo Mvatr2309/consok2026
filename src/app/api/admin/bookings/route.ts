@@ -18,6 +18,8 @@ export async function GET() {
 
 export async function DELETE(request: Request) {
   const { id } = await request.json();
+  await prisma.consent.deleteMany({ where: { bookingId: id } });
+  await prisma.telegramSub.deleteMany({ where: { bookingId: id } });
   await prisma.booking.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
