@@ -58,22 +58,32 @@ function googleCalendarUrl(result: BookingResult): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function yandexCalendarUrl(result: BookingResult): string {
+function downloadIcs(result: BookingResult) {
   const dt = new Date(result.dateTime);
   const end = new Date(dt.getTime() + 60 * 60 * 1000);
   const pad = (n: number) => n.toString().padStart(2, "0");
-  const fmtLocal = (d: Date) => {
-    // Format in Moscow time for Yandex
-    const msk = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
-    return `${msk.getFullYear()}-${pad(msk.getMonth() + 1)}-${pad(msk.getDate())}T${pad(msk.getHours())}:${pad(msk.getMinutes())}:00`;
-  };
-  const params = new URLSearchParams({
-    startDate: fmtLocal(dt),
-    endDate: fmtLocal(end),
-    title: `Консультация: ${result.programName}`,
-    description: `Эксперт: ${result.expertName}\nСсылка: ${result.meetingLink}`,
-  });
-  return `https://calendar.yandex.ru/event?${params.toString()}`;
+  const fmt = (d: Date) =>
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Consultations//RU",
+    "BEGIN:VEVENT",
+    `DTSTART:${fmt(dt)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:Консультация: ${result.programName}`,
+    `DESCRIPTION:Эксперт: ${result.expertName}\\nСсылка: ${result.meetingLink}`,
+    `URL:${result.meetingLink}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "consultation.ics";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function ProgramClient({
@@ -170,15 +180,13 @@ export default function ProgramClient({
           >
             Google Календарь
           </a>
-          <a
-            href={yandexCalendarUrl(result)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => downloadIcs(result)}
             className={styles.calendarBtn}
             style={{ background: "var(--color-accent)" }}
           >
-            Яндекс Календарь
-          </a>
+            Скачать .ics
+          </button>
         </div>
         <p className={styles.successText} style={{ marginTop: 16 }}>Напоминание в Telegram:</p>
         <a

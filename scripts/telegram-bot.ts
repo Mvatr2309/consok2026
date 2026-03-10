@@ -44,21 +44,7 @@ function googleCalendarUrl(programName: string, expertName: string, meetingLink:
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function yandexCalendarUrl(programName: string, expertName: string, meetingLink: string, dt: Date): string {
-  const end = new Date(dt.getTime() + 60 * 60 * 1000);
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const fmtLocal = (d: Date) => {
-    const msk = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
-    return `${msk.getFullYear()}-${pad(msk.getMonth() + 1)}-${pad(msk.getDate())}T${pad(msk.getHours())}:${pad(msk.getMinutes())}:00`;
-  };
-  const params = new URLSearchParams({
-    startDate: fmtLocal(dt),
-    endDate: fmtLocal(end),
-    title: `Консультация: ${programName}`,
-    description: `Эксперт: ${expertName}\nСсылка: ${meetingLink}`,
-  });
-  return `https://calendar.yandex.ru/event?${params.toString()}`;
-}
+const SITE_URL = "https://miptconsultations.icust.online";
 
 async function handleUpdate(update: { update_id: number; message?: { chat: { id: number }; text?: string } }) {
   if (!update.message?.text) return;
@@ -115,7 +101,7 @@ async function handleUpdate(update: { update_id: number; message?: { chat: { id:
   const product = booking.slot.product;
 
   const googleUrl = googleCalendarUrl(product.name, expert.name, expert.meetingLink, dt);
-  const yandexUrl = yandexCalendarUrl(product.name, expert.name, expert.meetingLink, dt);
+  const icsUrl = `${SITE_URL}/api/bookings/${bookingId}/ics`;
 
   await callTg("sendMessage", {
     chat_id: chatId,
@@ -125,7 +111,7 @@ async function handleUpdate(update: { update_id: number; message?: { chat: { id:
         [{ text: "🔗 Перейти на встречу", url: expert.meetingLink }],
         [
           { text: "📅 Google Календарь", url: googleUrl },
-          { text: "📅 Яндекс Календарь", url: yandexUrl },
+          { text: "📅 Скачать .ics", url: icsUrl },
         ],
       ],
     },
