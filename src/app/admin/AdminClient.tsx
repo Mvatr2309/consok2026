@@ -185,7 +185,7 @@ export default function AdminClient() {
                     <td>{e.login || <span style={{ color: "#999" }}>—</span>}</td>
                     <td>
                       <div className={s.linkCell}>
-                        <a href={cabinetLink} target="_blank" rel="noopener noreferrer" className={s.linkText}>{cabinetLink}</a>
+                        <span className={s.linkText} style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" }} title={cabinetLink}>{cabinetLink}</span>
                         <button className={`${s.btn} ${s.btnSmall}`} style={{ background: "#eee", whiteSpace: "nowrap" }} onClick={() => { navigator.clipboard.writeText(cabinetLink); }}>Копировать</button>
                       </div>
                     </td>
