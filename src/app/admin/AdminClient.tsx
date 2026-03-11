@@ -96,6 +96,7 @@ export default function AdminClient() {
     d.setDate(d.getDate() - d.getDay() + 1);
     return d;
   });
+  const [bookingsPage, setBookingsPage] = useState(0);
 
   const load = useCallback(async () => {
     if (tab === "programs") setPrograms(await api("programs"));
@@ -292,33 +293,48 @@ export default function AdminClient() {
         </div>
       )}
 
-      {tab === "bookings" && (
-        <div className={s.section}>
-          <div className={s.sectionHeader}>
-            <h2 className={s.sectionTitle}>Записи</h2>
+      {tab === "bookings" && (() => {
+        const perPage = 10;
+        const totalPages = Math.ceil(bookings.length / perPage);
+        const page = Math.min(bookingsPage, Math.max(totalPages - 1, 0));
+        const paged = bookings.slice(page * perPage, (page + 1) * perPage);
+        return (
+          <div className={s.section}>
+            <div className={s.sectionHeader}>
+              <h2 className={s.sectionTitle}>Записи ({bookings.length})</h2>
+            </div>
+            <table className={s.table}>
+              <thead><tr><th>ID</th><th>Имя</th><th>Email</th><th>Программа</th><th>Эксперт</th><th>Дата слота</th><th>Записан</th><th></th></tr></thead>
+              <tbody>
+                {paged.map((b) => (
+                  <tr key={b.id}>
+                    <td>{b.id}</td>
+                    <td><strong>{b.name}</strong></td>
+                    <td>{b.email}</td>
+                    <td>{b.slot.product.name}</td>
+                    <td>{b.slot.expert.name}</td>
+                    <td>{fmtDateTime(b.slot.dateTime)}</td>
+                    <td>{fmtDateTime(b.createdAt)}</td>
+                    <td>
+                      <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("bookings", b.id)}>Уд.</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!bookings.length && <p className={s.empty}>Нет записей</p>}
+            {totalPages > 1 && (
+              <div className={s.pagination}>
+                <button className={s.pageBtn} disabled={page === 0} onClick={() => setBookingsPage(page - 1)}>← Назад</button>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button key={i} className={`${s.pageBtn} ${i === page ? s.pageBtnActive : ""}`} onClick={() => setBookingsPage(i)}>{i + 1}</button>
+                ))}
+                <button className={s.pageBtn} disabled={page >= totalPages - 1} onClick={() => setBookingsPage(page + 1)}>Вперёд →</button>
+              </div>
+            )}
           </div>
-          <table className={s.table}>
-            <thead><tr><th>ID</th><th>Имя</th><th>Email</th><th>Программа</th><th>Эксперт</th><th>Дата слота</th><th>Записан</th><th></th></tr></thead>
-            <tbody>
-              {bookings.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.id}</td>
-                  <td><strong>{b.name}</strong></td>
-                  <td>{b.email}</td>
-                  <td>{b.slot.product.name}</td>
-                  <td>{b.slot.expert.name}</td>
-                  <td>{fmtDateTime(b.slot.dateTime)}</td>
-                  <td>{fmtDateTime(b.createdAt)}</td>
-                  <td>
-                    <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("bookings", b.id)}>Уд.</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!bookings.length && <p className={s.empty}>Нет записей</p>}
-        </div>
-      )}
+        );
+      })()}
 
       {tab === "consents" && <ConsentsTab />}
 
