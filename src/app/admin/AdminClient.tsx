@@ -97,6 +97,7 @@ export default function AdminClient() {
     return d;
   });
   const [bookingsPage, setBookingsPage] = useState(0);
+  const [slotsPage, setSlotsPage] = useState(0);
 
   const load = useCallback(async () => {
     if (tab === "programs") setPrograms(await api("programs"));
@@ -216,7 +217,7 @@ export default function AdminClient() {
       {tab === "slots" && (
         <div className={s.section}>
           <div className={s.sectionHeader}>
-            <h2 className={s.sectionTitle}>Слоты</h2>
+            <h2 className={s.sectionTitle}>Слоты ({slots.length})</h2>
             <div className={s.btnGroup}>
               <button className={s.btn} style={{ background: slotsView === "table" ? "var(--color-primary)" : "#eee", color: slotsView === "table" ? "#fff" : undefined }} onClick={() => setSlotsView("table")}>Таблица</button>
               <button className={s.btn} style={{ background: slotsView === "calendar" ? "var(--color-primary)" : "#eee", color: slotsView === "calendar" ? "#fff" : undefined }} onClick={() => setSlotsView("calendar")}>Календарь</button>
@@ -240,43 +241,58 @@ export default function AdminClient() {
             </div>
           </div>
 
-          {slotsView === "table" && (
-            <>
-              <table className={s.table}>
-                <thead><tr>
-                  <th><input type="checkbox" checked={slots.length > 0 && selectedSlots.size === slots.length} onChange={(e) => {
-                    if (e.target.checked) setSelectedSlots(new Set(slots.map((sl) => sl.id)));
-                    else setSelectedSlots(new Set());
-                  }} /></th>
-                  <th>ID</th><th>Дата/время</th><th>Программа</th><th>Эксперт</th><th>Мест</th><th>Ссылка</th><th>Действия</th>
-                </tr></thead>
-                <tbody>
-                  {slots.map((sl) => (
-                    <tr key={sl.id} style={selectedSlots.has(sl.id) ? { background: "rgba(0, 48, 146, 0.04)" } : undefined}>
-                      <td><input type="checkbox" checked={selectedSlots.has(sl.id)} onChange={(e) => {
-                        const next = new Set(selectedSlots);
-                        if (e.target.checked) next.add(sl.id); else next.delete(sl.id);
-                        setSelectedSlots(next);
-                      }} /></td>
-                      <td>{sl.id}</td>
-                      <td>{fmtDateTime(sl.dateTime)}</td>
-                      <td>{sl.product.name}</td>
-                      <td>{sl.expert.name}</td>
-                      <td>{sl._count.bookings}/{sl.maxParticipants}</td>
-                      <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sl.expert.meetingLink}</td>
-                      <td>
-                        <div className={s.btnGroup}>
-                          <button className={`${s.btn} ${s.btnPrimary} ${s.btnSmall}`} onClick={() => openModal("slot", { ...sl, productId: sl.product.id, expertId: sl.expert.id })}>Ред.</button>
-                          <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("slots", sl.id)}>Уд.</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!slots.length && <p className={s.empty}>Нет слотов</p>}
-            </>
-          )}
+          {slotsView === "table" && (() => {
+            const perPage = 10;
+            const totalPages = Math.ceil(slots.length / perPage);
+            const page = Math.min(slotsPage, Math.max(totalPages - 1, 0));
+            const pagedSlots = slots.slice(page * perPage, (page + 1) * perPage);
+            return (
+              <>
+                <table className={s.table}>
+                  <thead><tr>
+                    <th><input type="checkbox" checked={slots.length > 0 && selectedSlots.size === slots.length} onChange={(e) => {
+                      if (e.target.checked) setSelectedSlots(new Set(slots.map((sl) => sl.id)));
+                      else setSelectedSlots(new Set());
+                    }} /></th>
+                    <th>ID</th><th>Дата/время</th><th>Программа</th><th>Эксперт</th><th>Мест</th><th>Ссылка</th><th>Действия</th>
+                  </tr></thead>
+                  <tbody>
+                    {pagedSlots.map((sl) => (
+                      <tr key={sl.id} style={selectedSlots.has(sl.id) ? { background: "rgba(0, 48, 146, 0.04)" } : undefined}>
+                        <td><input type="checkbox" checked={selectedSlots.has(sl.id)} onChange={(e) => {
+                          const next = new Set(selectedSlots);
+                          if (e.target.checked) next.add(sl.id); else next.delete(sl.id);
+                          setSelectedSlots(next);
+                        }} /></td>
+                        <td>{sl.id}</td>
+                        <td>{fmtDateTime(sl.dateTime)}</td>
+                        <td>{sl.product.name}</td>
+                        <td>{sl.expert.name}</td>
+                        <td>{sl._count.bookings}/{sl.maxParticipants}</td>
+                        <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sl.expert.meetingLink}</td>
+                        <td>
+                          <div className={s.btnGroup}>
+                            <button className={`${s.btn} ${s.btnPrimary} ${s.btnSmall}`} onClick={() => openModal("slot", { ...sl, productId: sl.product.id, expertId: sl.expert.id })}>Ред.</button>
+                            <button className={`${s.btn} ${s.btnDanger} ${s.btnSmall}`} onClick={() => handleDelete("slots", sl.id)}>Уд.</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!slots.length && <p className={s.empty}>Нет слотов</p>}
+                {totalPages > 1 && (
+                  <div className={s.pagination}>
+                    <button className={s.pageBtn} disabled={page === 0} onClick={() => setSlotsPage(page - 1)}>← Назад</button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button key={i} className={`${s.pageBtn} ${i === page ? s.pageBtnActive : ""}`} onClick={() => setSlotsPage(i)}>{i + 1}</button>
+                    ))}
+                    <button className={s.pageBtn} disabled={page >= totalPages - 1} onClick={() => setSlotsPage(page + 1)}>Вперёд →</button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {slotsView === "calendar" && (
             <SlotsCalendar
