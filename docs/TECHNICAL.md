@@ -29,7 +29,8 @@ consultations/
 ├── public/
 │   └── experts/                   # Загруженные фото экспертов
 ├── scripts/
-│   └── send-reminders.ts          # Cron-скрипт отправки напоминаний
+│   ├── send-reminders.ts          # Cron-скрипт отправки напоминаний
+│   └── telegram-bot.ts            # Telegram-бот (long polling)
 ├── src/
 │   ├── proxy.ts                   # HTTP Basic Auth (Next.js 16 proxy)
 │   ├── generated/prisma/          # Сгенерированный Prisma Client
@@ -54,7 +55,9 @@ consultations/
 │       │   ├── AdminClient.tsx    # Клиентский компонент админки
 │       │   └── admin.module.css
 │       └── api/
-│           ├── bookings/route.ts  # POST /api/bookings
+│           ├── bookings/
+│           │   ├── route.ts           # POST /api/bookings
+│           │   └── [id]/ics/route.ts  # GET .ics файл для букинга
 │           └── admin/
 │               ├── programs/route.ts   # CRUD программ
 │               ├── experts/route.ts    # CRUD экспертов
@@ -83,6 +86,7 @@ consultations/
 | `SMTP_PASS` | Пароль приложения | `***` |
 | `ADMIN_USER` | Логин администратора | `admin` |
 | `ADMIN_PASS` | Пароль администратора | `***` |
+| `TELEGRAM_BOT_TOKEN` | Токен Telegram-бота | `***` |
 
 ---
 
@@ -145,14 +149,15 @@ npx prisma generate         # Генерация клиента
 ### Шаблоны
 
 1. **sendBookingConfirmation** — HTML-письмо с таблицей деталей + кнопки календарей
-2. **sendReminder** — HTML-письмо с кнопкой «Перейти на встречу»
+2. **sendCancellation** — HTML-письмо об отмене консультации
+3. **sendReminder** — HTML-письмо с кнопкой «Перейти на встречу»
 
-Оба шаблона используют общий wrapper (`emailWrapper`) с хедером МФТИ и футером.
+Все шаблоны используют общий wrapper (`emailWrapper`) с хедером и футером.
 
 ### Ссылки на календари
 
 - **Google Calendar**: `https://calendar.google.com/calendar/render?action=TEMPLATE&...`
-- **Yandex Calendar**: `https://calendar.yandex.ru/week?sidebar=addEvent&...`
+- **Скачать .ics**: `/api/bookings/[id]/ics` — универсальный формат для Яндекс Календаря, Apple Calendar и др.
 
 Продолжительность события по умолчанию: 60 минут.
 
@@ -177,7 +182,44 @@ npx tsx scripts/send-reminders.ts
 
 ---
 
-## 7. CSV-импорт слотов
+## 7. Telegram-бот
+
+### Общая информация
+- Бот: `@mipt_consultation_bot`
+- Скрипт: `scripts/telegram-bot.ts`
+- Метод работы: long polling (не webhook)
+- PM2 процесс: `telegram-bot`
+
+### Модель данных
+
+#### TelegramSub
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | Int, PK | Идентификатор |
+| chatId | String | Telegram chat ID |
+| bookingId | Int, unique, FK | Связанный букинг |
+| createdAt | DateTime | Дата подписки |
+
+### Логика работы
+
+1. Абитуриент нажимает «Напоминание в Telegram» на сайте → открывается deep link `https://t.me/mipt_consultation_bot?start=booking_{id}`
+2. Бот получает `/start booking_{id}`, находит букинг в БД
+3. Проверяет: букинг существует, не прошёл, нет дублирующей подписки
+4. Создаёт запись `TelegramSub`, отправляет подтверждение с деталями и кнопками (встреча, Google Календарь, .ics)
+5. Cron-скрипт `send-reminders.ts` проверяет подписки и отправляет напоминание за час до встречи
+6. При удалении букинга админом — отправляется сообщение об отмене в Telegram
+
+### Защита от спама
+Бот реагирует **только** на `/start` с deep link. Все остальные сообщения игнорируются.
+
+### Запуск
+```bash
+pm2 start npx --name telegram-bot -- tsx scripts/telegram-bot.ts
+```
+
+---
+
+## 8. CSV-импорт слотов
 
 ### Формат
 
@@ -201,7 +243,7 @@ npx tsx scripts/send-reminders.ts
 
 ---
 
-## 8. Деплой
+## 9. Деплой
 
 ### Целевой сервер
 
@@ -262,7 +304,7 @@ crontab -e
 
 ---
 
-## 9. Локальная разработка
+## 10. Локальная разработка
 
 ```bash
 # 1. Запуск PostgreSQL
@@ -289,7 +331,7 @@ npm run dev -- -p 3001
 
 ---
 
-## 10. Зависимости
+## 11. Зависимости
 
 ### Production
 - `next` 16.1.6 — фреймворк
