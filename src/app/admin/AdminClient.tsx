@@ -793,7 +793,7 @@ function NotificationsTab() {
             <label className={s.label} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
               <input
                 type="checkbox"
-                checked={settings.reminder_enabled === "true"}
+                checked={settings.reminder_enabled !== "false"}
                 onChange={(e) => set("reminder_enabled", e.target.checked ? "true" : "false")}
               />
               Включено

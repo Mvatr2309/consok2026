@@ -28,7 +28,7 @@ async function sendTelegramReminder(chatId: string, text: string, meetingLink: s
 async function main() {
   // Get reminder settings
   const enabledSetting = await prisma.settings.findUnique({ where: { key: "reminder_enabled" } });
-  if (enabledSetting?.value !== "true") {
+  if (enabledSetting?.value === "false") {
     console.log("Reminders disabled");
     return;
   }
