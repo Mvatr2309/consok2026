@@ -123,6 +123,25 @@
   border-color: var(--color-border);
 }
 
+.showMoreBtn {
+  display: block;
+  margin: 12px auto 0;
+  padding: 10px 24px;
+  background: transparent;
+  border: 2px dashed var(--color-primary);
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.showMoreBtn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 .slotDate {
   font-weight: 600;
   display: block;

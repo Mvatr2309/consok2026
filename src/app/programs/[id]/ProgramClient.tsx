@@ -107,6 +107,7 @@ export default function ProgramClient({
   const [consentPersonal, setConsentPersonal] = useState(false);
   const [consentRecording, setConsentRecording] = useState(false);
   const [cookieAccepted, setCookieAccepted] = useState(true);
+  const [showAllSlots, setShowAllSlots] = useState(false);
 
   useEffect(() => {
     setCookieAccepted(localStorage.getItem("cookie_accepted") === "1");
@@ -215,6 +216,7 @@ export default function ProgramClient({
             onClick={() => {
               setSelectedExpert(expert.id);
               setSelectedSlot(null);
+              setShowAllSlots(false);
               setError("");
             }}
           >
@@ -238,7 +240,7 @@ export default function ProgramClient({
             <>
               <p className={styles.hint}>Выберите удобное время</p>
               <div className={styles.slotsGrid}>
-                {currentExpert.slots.map((slot) => {
+                {(showAllSlots ? currentExpert.slots : currentExpert.slots.slice(0, 5)).map((slot) => {
                   const isFull = slot.bookedCount >= slot.maxParticipants;
                   const isSelected = selectedSlot === slot.id;
                   return (
@@ -268,6 +270,14 @@ export default function ProgramClient({
                   );
                 })}
               </div>
+              {!showAllSlots && currentExpert.slots.length > 5 && (
+                <button
+                  className={styles.showMoreBtn}
+                  onClick={() => setShowAllSlots(true)}
+                >
+                  + Ещё слоты ({currentExpert.slots.length - 5})
+                </button>
+              )}
             </>
           ) : (
             <p className={styles.noSlots}>
