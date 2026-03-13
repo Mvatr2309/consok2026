@@ -13,7 +13,6 @@ export default async function ProgramPage({ params }: Props) {
   if (isNaN(programId)) notFound();
 
   const now = new Date();
-  const fiveDaysLater = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
 
   const program = await prisma.product.findUnique({
     where: { id: programId },
@@ -23,7 +22,7 @@ export default async function ProgramPage({ params }: Props) {
           slots: {
             where: {
               productId: programId,
-              dateTime: { gte: now, lte: fiveDaysLater },
+              dateTime: { gte: now },
             },
             include: {
               _count: { select: { bookings: true } },
