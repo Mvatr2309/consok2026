@@ -9,6 +9,7 @@ type Booking = {
   name: string;
   email: string;
   createdAt: string;
+  attended: boolean;
 };
 
 type Slot = {
@@ -219,6 +220,34 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
     router.refresh();
   }
 
+  async function toggleAttendance(bookingId: number, attended: boolean) {
+    await fetch(`/api/expert/attendance?token=${encodeURIComponent(token)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingId, attended }),
+    });
+    // Update local state
+    if (data) {
+      setData({
+        ...data,
+        slots: data.slots.map((sl) => ({
+          ...sl,
+          bookings: sl.bookings.map((b) =>
+            b.id === bookingId ? { ...b, attended } : b
+          ),
+        })),
+      });
+    }
+    if (selectedCalSlot) {
+      setSelectedCalSlot({
+        ...selectedCalSlot,
+        bookings: selectedCalSlot.bookings.map((b) =>
+          b.id === bookingId ? { ...b, attended } : b
+        ),
+      });
+    }
+  }
+
   function switchTab(newTab: Tab) {
     setTab(newTab);
     setPage(1);
@@ -300,7 +329,7 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
                 {selectedCalSlot.bookings.length > 0 ? (
                   <table className={s.bookingsTable}>
                     <thead>
-                      <tr><th>Имя</th><th>Email</th><th>Дата записи</th></tr>
+                      <tr><th>Имя</th><th>Email</th><th>Дата записи</th><th>Присутствие</th></tr>
                     </thead>
                     <tbody>
                       {selectedCalSlot.bookings.map((b) => (
@@ -308,6 +337,14 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
                           <td>{b.name}</td>
                           <td><a href={`mailto:${b.email}`} className={s.emailLink}>{b.email}</a></td>
                           <td>{fmtDate(b.createdAt)}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <input
+                              type="checkbox"
+                              checked={b.attended}
+                              onChange={(e) => toggleAttendance(b.id, e.target.checked)}
+                              style={{ width: 18, height: 18, cursor: "pointer" }}
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -367,6 +404,7 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
                             <th>Имя</th>
                             <th>Email</th>
                             <th>Дата записи</th>
+                            <th>Присутствие</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -379,6 +417,14 @@ export default function ExpertCabinetClient({ token }: { token: string }) {
                                 </a>
                               </td>
                               <td>{fmtDate(b.createdAt)}</td>
+                              <td style={{ textAlign: "center" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={b.attended}
+                                  onChange={(e) => toggleAttendance(b.id, e.target.checked)}
+                                  style={{ width: 18, height: 18, cursor: "pointer" }}
+                                />
+                              </td>
                             </tr>
                           ))}
                         </tbody>

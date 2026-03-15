@@ -46,6 +46,7 @@ model Booking {
   slotId         Int
   createdAt      DateTime  @default(now())
   reminderSentAt DateTime?
+  attended       Boolean   @default(false)
   slot           Slot          @relation(fields: [slotId], references: [id])
   consent        Consent?
   telegramSub    TelegramSub?

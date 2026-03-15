@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       include: {
         product: { select: { name: true } },
         bookings: {
-          select: { id: true, name: true, email: true, createdAt: true },
+          select: { id: true, name: true, email: true, createdAt: true, attended: true },
           orderBy: { createdAt: "asc" as const },
         },
       },
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       include: {
         product: { select: { name: true } },
         bookings: {
-          select: { id: true, name: true, email: true, createdAt: true },
+          select: { id: true, name: true, email: true, createdAt: true, attended: true },
           orderBy: { createdAt: "asc" as const },
         },
       },
