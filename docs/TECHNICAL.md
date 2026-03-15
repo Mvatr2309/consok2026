@@ -67,6 +67,11 @@ consultations/
 │               ├── bookings/route.ts   # Записи (GET, DELETE)
 │               ├── upload/route.ts     # Загрузка фото
 │               └── settings/route.ts   # Настройки (GET, PUT)
+│           └── expert/
+│               ├── route.ts             # GET данные эксперта
+│               ├── login/route.ts       # POST вход
+│               ├── logout/route.ts      # POST выход
+│               └── attendance/route.ts  # PATCH отметка присутствия
 ├── .env                           # Переменные окружения
 ├── package.json
 ├── tsconfig.json
@@ -170,7 +175,7 @@ npx tsx scripts/send-reminders.ts
 ```
 
 Логика:
-1. Проверяет настройку `reminder_enabled`
+1. Проверяет настройку `reminder_enabled` (по умолчанию включено — отсутствие настройки трактуется как `"true"`, только явное `"false"` отключает)
 2. Вычисляет окно: `now < dateTime ≤ now + reminder_minutes_before`
 3. Находит записи без `reminderSentAt` в этом окне
 4. Отправляет email, помечает `reminderSentAt`
